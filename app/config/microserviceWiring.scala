@@ -16,6 +16,9 @@
 
 package config
 
+import com.typesafe.config.Config
+import play.api.Mode.Mode
+import play.api.{Configuration, Play}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.hooks.HttpHooks
 import uk.gov.hmrc.play.audit.http.HttpAuditing
@@ -31,12 +34,28 @@ trait Hooks extends HttpHooks with HttpAuditing {
 }
 
 trait WSHttp extends HttpGet with WSGet with HttpPut with WSPut with HttpPost with WSPost with HttpDelete with WSDelete with Hooks with AppName
-object WSHttp extends WSHttp
+object WSHttp extends WSHttp {
+  override protected def appNameConfiguration: Configuration = Play.current.configuration
+
+  override protected def configuration: Option[Config] = Option(Play.current.configuration.underlying)
+}
 
 object MicroserviceAuditConnector extends AuditConnector with RunMode {
   override lazy val auditingConfig = LoadAuditingConfig(s"$env.auditing")
+
+  override protected def mode: Mode = Play.current.mode
+
+  override protected def runModeConfiguration: Configuration = Play.current.configuration
 }
 
 object MicroserviceAuthConnector extends AuthConnector with ServicesConfig with WSHttp {
   override val authBaseUrl = baseUrl("auth")
+
+  override protected def appNameConfiguration: Configuration = Play.current.configuration
+
+  override protected def mode: Mode = Play.current.mode
+
+  override protected def runModeConfiguration: Configuration = Play.current.configuration
+
+  override protected def configuration: Option[Config] = Option(Play.current.configuration.underlying)
 }

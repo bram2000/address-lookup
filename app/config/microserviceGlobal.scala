@@ -18,14 +18,15 @@ package config
 
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
+import play.api.Mode.Mode
 import play.api.mvc.EssentialFilter
-import play.api.{Application, Configuration, Logger => PlayLogger, Play}
+import play.api.{Application, Configuration, Play}
 import uk.gov.hmrc.play.auth.controllers.AuthParamsControllerConfig
 import uk.gov.hmrc.play.auth.microservice.filters.AuthorisationFilter
 import uk.gov.hmrc.play.config.{AppName, ControllerConfig, RunMode}
-import uk.gov.hmrc.play.filters.RandomJsonFilter
+import uk.gov.hmrc.play.filters.{MicroserviceFilterSupport, RandomJsonFilter}
 import uk.gov.hmrc.play.microservice.bootstrap.DefaultMicroserviceGlobal
-import uk.gov.hmrc.play.microservice.filters.{ AuditFilter, LoggingFilter, MicroserviceFilterSupport }
+import uk.gov.hmrc.play.microservice.filters.{AuditFilter, LoggingFilter}
 
 
 object ControllerConfiguration extends ControllerConfig {
@@ -42,6 +43,8 @@ object MicroserviceAuditFilter extends AuditFilter with AppName with Microservic
   override val auditConnector = MicroserviceAuditConnector
 
   override def controllerNeedsAuditing(controllerName: String): Boolean = ControllerConfiguration.paramsForController(controllerName).needsAuditing
+
+  override protected def appNameConfiguration: Configuration = Play.current.configuration
 }
 
 
@@ -58,7 +61,7 @@ object MicroserviceAuthFilter extends AuthorisationFilter with MicroserviceFilte
 }
 
 
-object MicroserviceGlobal extends DefaultMicroserviceGlobal with RunMode with MicroserviceFilterSupport {
+object MicroserviceGlobal extends DefaultMicroserviceGlobal with RunMode {
   override val auditConnector = MicroserviceAuditConnector
 
   override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"${app.mode}.microservice.metrics")
@@ -80,4 +83,8 @@ object MicroserviceGlobal extends DefaultMicroserviceGlobal with RunMode with Mi
   override def onStart(app: Application) {
     super.onStart(app)
   }
+
+  override protected def mode: Mode = Play.current.mode
+
+  override protected def runModeConfiguration: Configuration = Play.current.configuration
 }
